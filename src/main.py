@@ -92,7 +92,7 @@ def stream_from_ollama(messages, model=MODEL_NAME, tools=None, tool_choice=None)
         print(f"🔥 Payload: {json.dumps(payload)}")
         
         try:
-            with requests.post(OLLAMA_URL, json=payload, stream=True, timeout=500) as resp:
+            with requests.post(OLLAMA_URL, json=payload, stream=True, timeout=1200) as resp:
                 print("🔥 Connected! Starting stream...")
                 resp.raise_for_status()
                 print("🔥 Response status OK")

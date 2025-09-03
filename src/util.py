@@ -1,4 +1,3 @@
-
 import base64
 from dataclasses import asdict, dataclass
 import hashlib
@@ -31,9 +30,7 @@ def convert_claude_tools_to_ollama(claude_tools):
         description = tool.get('description', '')
         parameters = tool.get('input_schema', {})
         
-        # Only convert supported tools
         if name in SUPPORTED_CLAUDE_TOOLS:
-            # Use proper Ollama format with type: "function" wrapper
             ollama_tools.append({
                 "type": "function",
                 "function": {
@@ -55,9 +52,6 @@ def build_message_start(model: str) -> MessageStart:
         )
     )
 
-# -----------------------------
-# 3. 메시지 변환 함수
-# -----------------------------
 def convert_messages_to_ollama_format(messages):
     """Convert Anthropic messages or string to Ollama chat format"""
     ollama_messages = []
@@ -68,7 +62,6 @@ def convert_messages_to_ollama_format(messages):
         content = msg.get("content", "")
         
         if isinstance(content, list):
-            # Handle Claude Code tool_result messages
             text_parts = []
             tool_results = []
             
@@ -84,7 +77,6 @@ def convert_messages_to_ollama_format(messages):
                         else:
                             tool_results.append(f"Tool {tool_id} result: {result_content}")
             
-            # Combine text and tool results
             combined_content = " ".join(text_parts)
             if tool_results:
                 combined_content += "\n\nTool Results:\n" + "\n".join(tool_results)
@@ -93,7 +85,6 @@ def convert_messages_to_ollama_format(messages):
         ollama_messages.append({"role": role, "content": content})
     
     print(f"Converted messages: {ollama_messages}")
-    
     return ollama_messages
 
 def to_sse(event: str, data: object) -> str:
@@ -101,39 +92,67 @@ def to_sse(event: str, data: object) -> str:
     return f"event: {event}\n" + f"data: {json.dumps(asdict(data), ensure_ascii=False)}\n\n"
 
 def build_detailed_tool_instruction(ollama_tools):
-    """Generate perfect instruction for all Claude Code scenarios"""
+    """Generate strict instruction for Claude Code with Ollama, including tool schema awareness and error handling"""
     
-    base_instruction = f"""You are Claude Code assistant. Tools available: {', '.join([tool['function']['name'] for tool in ollama_tools])}
+    base_instruction = f"""You are **Claude Code Assistant**.
+Available tools: {', '.join([tool['function']['name'] for tool in ollama_tools])}
 
-CRITICAL DECISION TREE:
-1. Is this a COMPLEX/MULTI-STEP request? (creating multiple files, implementing features, building services, etc.)
-   → YES: IMMEDIATELY use TodoWrite to plan all steps, then execute each step
-   → NO: Continue to step 2
+-------------------------
+CRITICAL DECISION TREE
+-------------------------
+1. COMPLEX or MULTI-STEP request? (e.g., create/build/implement, multiple files, services, or combined requirements)
+   → MUST first call **TodoWrite** to plan all steps, then execute sequentially.
 
-2. Is this a SINGLE ACTION? (read one file, run one command, edit one thing)
-   → YES: Use the appropriate tool directly
-   → NO: Continue to step 3
+2. SINGLE ACTION request? (e.g., read one file, run one command, edit one thing)
+   → MUST directly call the correct tool.
 
-3. Is this a QUESTION/EXPLANATION? (asking about concepts, seeking information)
-   → YES: Answer with text
+3. QUESTION or EXPLANATION request? (e.g., ask about concepts, definitions, background)
+   → MUST answer in plain text.
 
-MULTI-STEP INDICATORS (ALWAYS use TodoWrite first):
-- "개발/develop/create/build/implement/make"
-- "구성/structure/organize"  
-- "모든/all files"
-- Multiple requirements in one request
-- Mentions folders + files + code
+-------------------------
+MULTI-STEP TRIGGERS:
+- Keywords: "개발", "구현", "create", "build", "implement", "make"
+- Mentions of structure/organization of code or folders
+- Requests involving multiple files, all files, or combined tasks
 
-TodoWrite FORMAT:
-{{"todos": [{{"content": "Clear task description", "status": "pending", "activeForm": "Doing the task"}}]}}
+-------------------------
+MANDATORY TodoWrite FORMAT (JSON only):
+{{
+  "todos": [
+    {{"content": "Clear task description", "status": "pending", "activeForm": "Doing the task"}}
+  ]
+}}
 
+-------------------------
+TOOL USAGE GUIDELINES:
+- ALWAYS check the tool's schema before calling.
+- Ensure parameter names, types, and required fields match exactly.
+- For Bash tool:
+  - param `command`: string, required
+  - param `runInBackground`: boolean, optional
+- Always validate inputs before calling a tool.
+
+-------------------------
+TOOL ERROR HANDLING:
+- If a tool fails:
+  1) Determine the cause from the error message.
+  2) Explain concisely to the user what went wrong.
+  3) Suggest or provide corrected parameters if possible.
+- Never output raw stack traces.
+- Do not ignore tool failures; always provide actionable info.
+
+-------------------------
 EXAMPLES:
-- "auth 서비스 개발" → TodoWrite immediately
-- "README 읽어줘" → Read tool directly  
-- "FastAPI가 뭐야?" → Text answer
+- "auth 서비스 개발" → MUST call TodoWrite immediately.
+- "README 읽어줘" → MUST call Read tool directly.
+- "FastAPI가 뭐야?" → MUST answer in plain text.
 
-NEVER give explanations about tool errors - just use tools correctly."""
-    
+-------------------------
+RULES:
+- ALWAYS follow the decision tree strictly.
+- NEVER output malformed JSON for TodoWrite.
+- NEVER output unnecessary explanations about tool internals unless required for user action.
+"""
     return base_instruction
 
 def add_tool_instruction(payload, ollama_tools, messages):
@@ -142,35 +161,23 @@ def add_tool_instruction(payload, ollama_tools, messages):
     for tool in ollama_tools:
         print(f"   - {tool['function']['name']}")
     
-    # 강화된 상세 지침 생성
     system_instruction = build_detailed_tool_instruction(ollama_tools)
-    
-    # Add system message at the beginning instead of embedding in user message
-    system_message = {
-        "role": "system", 
-        "content": system_instruction
-    }
-    
-    # Insert system message at the beginning
+    system_message = {"role": "system", "content": system_instruction}
     messages.insert(0, system_message)
     
     print(f"🚨 Added system instruction with {len(system_instruction)} characters")
     print(f"🚨 First 200 chars: {system_instruction[:200]}...")
-    
-    # Debug: Print the full system instruction to see what we're sending
-    print(f"🔍 FULL SYSTEM INSTRUCTION BEING SENT:")
+    print("🔍 FULL SYSTEM INSTRUCTION BEING SENT:")
     print("-" * 80)
     print(system_instruction)
     print("-" * 80)
 
-# 비밀키 (서비스 시작 시 고정된 random key 사용 권장)
 from src.const import DEFAULT_SIGNATURE_SECRET
 SECRET_KEY = os.getenv("SIGNATURE_SECRET", DEFAULT_SIGNATURE_SECRET)
 
 def generate_signature(text: str) -> str:
     """
-    thinking 텍스트 블록에 대해 무결성 서명을 생성
-    HMAC-SHA256 + base64 인코딩
+    Generate HMAC-SHA256 + Base64 signature for thinking text block integrity
     """
     if not text:
         return ""
