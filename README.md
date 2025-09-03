@@ -9,7 +9,6 @@ Claude Router는 Claude Code를 로컬 Ollama 설치 및 GPT-OSS 모델과 연�
 *   **Anthropic API 호환**: Anthropic Messages API와 완벽하게 호환되어 안정적으로 통신합니다.
 *   **모든 도구 지원**: 파일 CRUD, 터미널 명령어 실행 등 Claude Code의 모든 도구를 지능적으로 변환하고 지원합니다.
 *   **원클릭 실행**: `run.sh` 스크립트 하나로 의존성 설치, 환경 설정, 서비스 실행까지 한 번에 해결합니다.
-*   **Docker 지원**: Docker를 통해 어떤 개발 환경에서든 간편하게 배포하고 실행할 수 있습니다.
 
 ## Prerequisites
 
@@ -45,7 +44,7 @@ ollama pull gpt-oss:20b
 
 ### 1. 리포지토리 클론 및 설정
 ```bash
-git clone https://github.com/your-username/claude-router.git
+git clone https://github.com/say828/claude-router.git
 cd claude-router
 chmod +x run.sh
 ```
