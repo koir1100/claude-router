@@ -1,0 +1,10 @@
+{
+"model": "gpt-oss:20b",
+"messages": [
+    {
+    "role": "user",
+    "content": "안녕"
+    }
+],
+"stream": true
+}

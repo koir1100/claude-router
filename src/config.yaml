@@ -1,0 +1,11 @@
+# Claude Router Proxy 설정
+
+# 사용할 오픈 모델 이름
+model_name: gpt-oss:20b
+
+# 로컬 Ollama 서버 URL  
+ollama_url: http://localhost:11434/api/chat
+
+# 프록시 서버 호스트 및 포트
+host: 0.0.0.0
+port: 4000
