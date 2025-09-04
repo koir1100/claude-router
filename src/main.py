@@ -112,7 +112,7 @@ def stream_from_ollama(messages, model=MODEL_NAME, tools=None, tool_choice=None)
                         thinking = message.get("thinking", "")
                         tool_calls = message.get("tool_calls", [])
                         
-                        print(f"🔍 Received: done={data.get('done')}, thinking={bool(thinking)}, content='{content}', tool_calls={len(tool_calls)}")
+                        print(f"🔍 Received: done={data.get('done')}, thinking={thinking}, content='{content}', tool_calls={len(tool_calls)}")
 
                         if data.get("done", False):
                             print(f"🔚 Stream ended, done=True detected")

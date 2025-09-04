@@ -109,6 +109,15 @@ class BashOutputArgs:
 class KillBashArgs:
     shell_id: str
 
+# MCP IDE Tools
+@dataclass
+class McpIdeGetDiagnosticsArgs:
+    uri: Optional[str] = None
+
+@dataclass
+class McpIdeExecuteCodeArgs:
+    code: str
+
 # Mapping from tool name to its argument dataclass
 TOOL_ARG_CLASSES = {
     "Task": TaskArgs,
@@ -126,4 +135,6 @@ TOOL_ARG_CLASSES = {
     "WebSearch": WebSearchArgs,
     "BashOutput": BashOutputArgs,
     "KillBash": KillBashArgs,
+    "mcp__ide__getDiagnostics": McpIdeGetDiagnosticsArgs,
+    "mcp__ide__executeCode": McpIdeExecuteCodeArgs,
 }

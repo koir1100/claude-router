@@ -1,0 +1,64 @@
+{
+  "timestamp": "2025-09-04T18:15:01.272679",
+  "total_duration": 151.594792,
+  "summary": {
+    "total": 7,
+    "passed": 1,
+    "failed": 6,
+    "timeout": 0,
+    "error": 0,
+    "not_found": 0,
+    "success_rate": 14.285714285714285
+  },
+  "results": {
+    "test_claude_tools_comprehensive": {
+      "status": "FAILED",
+      "duration": 99.96645617485046,
+      "stdout": "\n\ud83e\uddea Running comprehensive Claude Code tools test suite...\n\u2705 Router health check passed\n\u2705 Write tool test passed\n\u2705 Read tool test passed\n\u2705 Edit tool test passed\n\u274c test_multiedit_tool failed: MultiEdit tool was not called\n\u2705 Bash tool test passed\n\u2705 BashOutput tool test passed\n\u2705 KillBash tool test passed\n\u2705 Glob tool test passed\n\u2705 Grep tool test passed\n\u2705 WebFetch tool test passed\n\u2705 WebSearch tool test passed\n\u2705 NotebookEdit tool test passed\n\u2705 mcp__ide__executeCode tool test passed\n\u2705 TodoWrite tool test passed\n\u274c test_task_tool failed: Task tool was not called\n\u2705 ExitPlanMode tool test passed\n\u274c test_mcp_ide_getdiagnostics_tool failed: mcp__ide__getDiagnostics tool was not called\n\n\ud83d\udcca Test Results: 15 passed, 3 failed\n",
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/kimhyeonwoo/Documents/GitHub/claude-router/test/test_claude_tools_comprehensive.py\", line 537, in <module>\n    test_all_tools_comprehensive()\n  File \"/Users/kimhyeonwoo/Documents/GitHub/claude-router/test/test_claude_tools_comprehensive.py\", line 534, in test_all_tools_comprehensive\n    assert failed == 0, f\"{failed} tests failed\"\n           ^^^^^^^^^^^\nAssertionError: 3 tests failed\n",
+      "return_code": 1
+    },
+    "test_file_operations": {
+      "status": "PASSED",
+      "duration": 20.50508403778076,
+      "stdout": "\ud83e\uddea Testing File Operations Tools...\n\u2705 Write tool call successful\n\u2705 Read tool call successful\n\u2705 Edit tool call successful\n\u2705 MultiEdit tool call successful\n\u2705 All file operations tests passed!\n",
+      "stderr": "",
+      "return_code": 0
+    },
+    "test_execution_tools": {
+      "status": "FAILED",
+      "duration": 4.6545257568359375,
+      "stdout": "\ud83e\uddea Testing Execution Tools...\n",
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/kimhyeonwoo/Documents/GitHub/claude-router/test/test_execution_tools.py\", line 282, in <module>\n    test_execution_tools_comprehensive()\n  File \"/Users/kimhyeonwoo/Documents/GitHub/claude-router/test/test_execution_tools.py\", line 271, in test_execution_tools_comprehensive\n    test_bash_command_execution()\n  File \"/Users/kimhyeonwoo/Documents/GitHub/claude-router/test/test_execution_tools.py\", line 72, in test_bash_command_execution\n    assert \"command\" in tool_input, \"Command parameter missing\"\n           ^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Command parameter missing\n",
+      "return_code": 1
+    },
+    "test_search_tools": {
+      "status": "FAILED",
+      "duration": 3.9584479331970215,
+      "stdout": "\ud83e\uddea Testing Search Tools...\n",
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/kimhyeonwoo/Documents/GitHub/claude-router/test/test_search_tools.py\", line 383, in <module>\n    test_search_tools_comprehensive()\n  File \"/Users/kimhyeonwoo/Documents/GitHub/claude-router/test/test_search_tools.py\", line 369, in test_search_tools_comprehensive\n    test_glob_pattern_matching()\n  File \"/Users/kimhyeonwoo/Documents/GitHub/claude-router/test/test_search_tools.py\", line 69, in test_glob_pattern_matching\n    assert \"pattern\" in tool_input, \"Pattern parameter missing\"\n           ^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Pattern parameter missing\n",
+      "return_code": 1
+    },
+    "test_web_tools": {
+      "status": "FAILED",
+      "duration": 5.014703035354614,
+      "stdout": "\ud83e\uddea Testing Web Tools...\n",
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/kimhyeonwoo/Documents/GitHub/claude-router/test/test_web_tools.py\", line 321, in <module>\n    test_web_tools_comprehensive()\n  File \"/Users/kimhyeonwoo/Documents/GitHub/claude-router/test/test_web_tools.py\", line 308, in test_web_tools_comprehensive\n    test_webfetch_basic()\n  File \"/Users/kimhyeonwoo/Documents/GitHub/claude-router/test/test_web_tools.py\", line 69, in test_webfetch_basic\n    assert \"url\" in tool_input, \"URL parameter missing\"\n           ^^^^^^^^^^^^^^^^^^^\nAssertionError: URL parameter missing\n",
+      "return_code": 1
+    },
+    "test_notebook_and_ide_tools": {
+      "status": "FAILED",
+      "duration": 7.260957956314087,
+      "stdout": "\ud83e\uddea Testing Notebook and IDE Tools...\n",
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/kimhyeonwoo/Documents/GitHub/claude-router/test/test_notebook_and_ide_tools.py\", line 385, in <module>\n    test_notebook_and_ide_tools_comprehensive()\n  File \"/Users/kimhyeonwoo/Documents/GitHub/claude-router/test/test_notebook_and_ide_tools.py\", line 370, in test_notebook_and_ide_tools_comprehensive\n    test_notebookedit_basic()\n  File \"/Users/kimhyeonwoo/Documents/GitHub/claude-router/test/test_notebook_and_ide_tools.py\", line 74, in test_notebookedit_basic\n    assert \"notebook_path\" in tool_input, \"notebook_path parameter missing\"\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: notebook_path parameter missing\n",
+      "return_code": 1
+    },
+    "test_task_management_tools": {
+      "status": "FAILED",
+      "duration": 10.227933168411255,
+      "stdout": "\ud83e\uddea Testing Task Management Tools...\n",
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/kimhyeonwoo/Documents/GitHub/claude-router/test/test_task_management_tools.py\", line 403, in <module>\n    test_task_management_tools_comprehensive()\n  File \"/Users/kimhyeonwoo/Documents/GitHub/claude-router/test/test_task_management_tools.py\", line 389, in test_task_management_tools_comprehensive\n    test_todowrite_basic_planning()\n  File \"/Users/kimhyeonwoo/Documents/GitHub/claude-router/test/test_task_management_tools.py\", line 75, in test_todowrite_basic_planning\n    assert len(calls) > 0, \"TodoWrite tool not called\"\n           ^^^^^^^^^^^^^^\nAssertionError: TodoWrite tool not called\n",
+      "return_code": 1
+    }
+  }
+}
