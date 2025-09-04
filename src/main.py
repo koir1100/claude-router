@@ -7,7 +7,7 @@ Supports:
 - Streaming response (SSE)
 - Compatible with Docker + uvicorn --reload
 """
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from enum import Enum
 import os
 import json
@@ -15,7 +15,6 @@ from typing import Any, Optional
 import yaml
 import requests
 import re
-import uuid
 import subprocess
 from pathlib import Path
 from fastapi import FastAPI, Request
@@ -23,7 +22,7 @@ from fastapi.responses import StreamingResponse
 
 # src 폴더에 있는 type.py와 util.py를 임포트합니다.
 from src.type import *
-from src.util import add_tool_instruction, build_message_start, convert_claude_tools_to_ollama, generate_signature, to_sse
+from src.util import add_tool_instruction, build_message_start, convert_claude_tools_to_ollama, generate_signature, to_sse, convert_ollama_tool_call_to_claude, dict_to_ollama_tool_call
 
 app = FastAPI()
 
@@ -76,12 +75,12 @@ async def clear_logs():
 
 def stream_from_ollama(messages, model=MODEL_NAME, tools=None, tool_choice=None):
     payload = {"model": MODEL_NAME, "messages": messages, "stream": True}
-    
+
     if tools:
         ollama_tools = convert_claude_tools_to_ollama(tools)
         if ollama_tools:
             add_tool_instruction(payload, ollama_tools, messages)
-    
+
     try:
         start_message = Message(model=model)
         message_start_event = MessageStart(message=start_message)
@@ -113,7 +112,6 @@ def stream_from_ollama(messages, model=MODEL_NAME, tools=None, tool_choice=None)
                         thinking = message.get("thinking", "")
                         tool_calls = message.get("tool_calls", [])
                         
-                        # Debug: Log every message we receive
                         print(f"🔍 Received: done={data.get('done')}, thinking={bool(thinking)}, content='{content}', tool_calls={len(tool_calls)}")
 
                         if data.get("done", False):
@@ -123,6 +121,7 @@ def stream_from_ollama(messages, model=MODEL_NAME, tools=None, tool_choice=None)
                                 final_tool_calls = tool_calls
                             else:
                                 print("❌ No tool_calls in final message")
+                            # Break to exit the streaming loop and process tool calls below
                             break
                         
                         if thinking:
@@ -149,7 +148,6 @@ def stream_from_ollama(messages, model=MODEL_NAME, tools=None, tool_choice=None)
                                 )
                                 yield to_sse(event=Event.content_block_delta.value, data=signature_event)
                                 
-                                # 중복 호출을 방지하고 한 번만 전송
                                 content_block_stop = ContentBlockStop(index=current_block_index)
                                 yield to_sse(event=Event.content_block_stop.value, data=content_block_stop)
                                 current_block_index += 1
@@ -184,49 +182,37 @@ def stream_from_ollama(messages, model=MODEL_NAME, tools=None, tool_choice=None)
                         print(f"🔄 Block index incremented to {current_block_index}")
 
                     for tool_call in final_tool_calls:
-                        tool_id = f"toolu_{uuid.uuid4().hex[:12]}"
-                        function = tool_call.get("function", {})
-                        tool_name = function.get("name", "unknown")
-                        tool_args = function.get("arguments", {})
+                        print(f"🔧 Converting Ollama tool call: {tool_call}")
                         
-                        # Validate tool name against supported tools
-                        from src.const import SUPPORTED_CLAUDE_TOOLS
-                        
-                        if tool_name not in SUPPORTED_CLAUDE_TOOLS:
-                            print(f"❌ UNSUPPORTED TOOL USED: {tool_name}")
-                            print(f"   Available tools: {', '.join(sorted(SUPPORTED_CLAUDE_TOOLS))}")
-                            print(f"   This will cause Claude Code to fail!")
+                        try:
+                            # Convert dict to ToolCall dataclass first
+                            ollama_tool_call = dict_to_ollama_tool_call(tool_call)
                             
-                            # Send error message as text content instead
-                            error_msg = f"Error: Unsupported tool '{tool_name}'. Use one of: {', '.join(sorted(SUPPORTED_CLAUDE_TOOLS))}"
+                            # Convert ToolCall to ClaudeToolCall dataclass
+                            claude_tool_call = convert_ollama_tool_call_to_claude(ollama_tool_call)
                             
-                            # Send as text content block instead of tool_use
-                            start_event = ContentBlockStart(index=current_block_index, content_block=ContentBlock(text=error_msg))
-                            yield to_sse(event=Event.content_block_start.value, data=start_event)
+                            # Extract data from ClaudeToolCall dataclass
+                            tool_id = claude_tool_call.id
+                            tool_name = claude_tool_call.name
+                            validated_args = claude_tool_call.input
                             
-                            stop_event = ContentBlockStop(index=current_block_index)
-                            yield to_sse(event=Event.content_block_stop.value, data=stop_event)
-                            current_block_index += 1
+                            print(f"  ✅ Converted to Claude format - Tool: {tool_name}, Args: {validated_args}")
+                            
+                        except (ValueError, TypeError) as e:
+                            print(f"❌ Failed to convert tool call: {e}. Skipping.")
                             continue
-                        
-                        print(f"  ✅ Tool: {tool_name}, Args: {tool_args}")
-                        print(f"🔧 Starting tool_use block for {tool_name}")
-                        
-                        # Create proper tool_use content block
+
                         tool_use_content_block = ContentBlockToolUse(
                             type="tool_use",
                             id=tool_id,
                             name=tool_name
                         )
                         
-                        # Send content_block_start for tool_use
                         start_event = ContentBlockStart(index=current_block_index, content_block=tool_use_content_block)
                         yield to_sse(event=Event.content_block_start.value, data=start_event)
                         
-                        # Stream tool arguments as input_json_delta
-                        if tool_args:
-                            input_json = json.dumps(tool_args, ensure_ascii=False)
-                            # Send complete JSON as single delta (following Anthropic's current behavior)
+                        if validated_args:
+                            input_json = json.dumps(validated_args, ensure_ascii=False)
                             delta_event = ContentBlockDelta(
                                 index=current_block_index,
                                 delta=ContentBlockToolUseDelta(
