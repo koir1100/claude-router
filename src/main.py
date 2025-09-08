@@ -17,12 +17,20 @@ import requests
 import re
 import subprocess
 from pathlib import Path
+import sys
 from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse
 
 # src 폴더에 있는 type.py와 util.py를 임포트합니다.
 from src.type import *
 from src.util import add_tool_instruction, build_message_start, convert_claude_tools_to_ollama, generate_signature, to_sse, convert_ollama_tool_call_to_claude, dict_to_ollama_tool_call
+
+# Ensure stdout/stderr can handle Unicode output (e.g. emojis) on Windows
+for stream in (sys.stdout, sys.stderr):
+    try:
+        stream.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
 
 app = FastAPI()
 
