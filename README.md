@@ -8,7 +8,7 @@ Claude Router는 Claude Code를 로컬 Ollama 설치 및 GPT-OSS 모델과 연�
 *   **로컬 LLM 연동**: 로컬에 설치된 Ollama와 `gpt-oss:20b` 같은 오픈소스 모델을 Claude Code의 브레인으로 사용합니다.
 *   **Anthropic API 호환**: Anthropic Messages API와 완벽하게 호환되어 안정적으로 통신합니다.
 *   **모든 도구 지원**: 파일 CRUD, 터미널 명령어 실행 등 Claude Code의 모든 도구를 지능적으로 변환하고 지원합니다.
-*   **원클릭 실행**: `run.sh` 스크립트 하나로 의존성 설치, 환경 설정, 서비스 실행까지 한 번에 해결합니다.
+*   **원클릭 실행**: macOS/Linux는 `run.sh`, Windows는 `run.ps1` 하나로 의존성 설치, 환경 설정, 서비스 실행까지 한 번에 해결합니다.
 
 ## Prerequisites
 
@@ -46,14 +46,25 @@ ollama pull gpt-oss:20b
 ```bash
 git clone https://github.com/say828/claude-router.git
 cd claude-router
-chmod +x run.sh
+chmod +x run.sh  # macOS/Linux
 ```
 
 ### 2. 라우터 실행
-`run.sh` 스크립트를 실행하면 필요한 모든 설정과 서비스가 자동으로 시작됩니다.
+`run.sh` 또는 `run.ps1` 스크립트를 실행하면 필요한 모든 설정과 서비스가 자동으로 시작됩니다.
+
+**macOS/Linux**
+
 ```bash
 ./run.sh
 ```
+
+**Windows**
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\run.ps1
+```
+
+Windows에서 실행하려면 PowerShell, Python, 그리고 Ollama가 설치되어 있어야 합니다.
 
 스크립트가 실행하는 작업은 다음과 같습니다:
 - Claude Code 연동을 위한 `.claude/settings.local.json` 파일 생성

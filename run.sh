@@ -1,6 +1,12 @@
 #!/bin/bash
 set -e
 
+# If executed on Windows, direct users to the PowerShell script
+if [ "$OS" = "Windows_NT" ]; then
+    echo "⚠️  Windows 환경이 감지되었습니다. run.ps1 스크립트를 실행하세요."
+    exit 0
+fi
+
 echo "🟢 Claude Router 환경 세팅 시작..."
 
 # -----------------------------
