@@ -1,4 +1,5 @@
 Write-Host "🟢 Claude Router 환경 세팅 시작..."
+$ErrorActionPreference = 'Stop'
 
 # -----------------------------
 # 1. .claude 설정 생성
@@ -26,6 +27,10 @@ Write-Host "✅ .claude/settings.local.json 생성 완료"
 # -----------------------------
 Write-Host "📦 Python 패키지 설치 중..."
 pip install -r requirements.txt
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "❌ Python 패키지 설치 실패"
+    exit $LASTEXITCODE
+}
 Write-Host "✅ Python 패키지 설치 완료"
 
 # -----------------------------
@@ -33,7 +38,7 @@ Write-Host "✅ Python 패키지 설치 완료"
 # -----------------------------
 Write-Host "🔍 Ollama 서비스 확인 중..."
 try {
-    Invoke-WebRequest http://localhost:11434/api/version | Out-Null
+    Invoke-WebRequest http://localhost:11434/api/version -ErrorAction Stop | Out-Null
     Write-Host "✅ Ollama 서비스 확인 완료"
 } catch {
     Write-Error "❌ Ollama가 실행되지 않았습니다. 먼저 Ollama를 시작해주세요: ollama serve"
@@ -44,7 +49,12 @@ try {
 # 4. GPT-OSS 모델 확인
 # -----------------------------
 Write-Host "🔍 GPT-OSS:20b 모델 확인 중..."
-if (!(ollama list | Select-String "gpt-oss:20b")) {
+$ollamaList = & ollama list 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "❌ Ollama 목록 조회 실패: $ollamaList"
+    exit $LASTEXITCODE
+}
+if ($ollamaList -notmatch "gpt-oss:20b") {
     Write-Error "❌ GPT-OSS:20b 모델이 설치되지 않았습니다. 먼저 모델을 설치해주세요: ollama pull gpt-oss:20b"
     exit 1
 }
@@ -66,24 +76,32 @@ if ($connections) {
 # 6. Claude Router 백그라운드 실행
 # -----------------------------
 Write-Host "🚀 Claude Router 백그라운드에서 실행 중..."
-$logFile = "claude-router.log"
-$process = Start-Process "python" -ArgumentList "-m", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "4000", "--reload" -RedirectStandardOutput $logFile -RedirectStandardError $logFile -NoNewWindow -PassThru
+$stdoutLog = "claude-router.log"
+$stderrLog = "claude-router-error.log"
+try {
+    $process = Start-Process "python" -ArgumentList "-m", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "4000", "--reload" -RedirectStandardOutput $stdoutLog -RedirectStandardError $stderrLog -NoNewWindow -PassThru -ErrorAction Stop
+} catch {
+    Write-Error "❌ Uvicorn 시작 실패"
+    exit 1
+}
 Start-Sleep -Seconds 2
 
 try {
-    Invoke-WebRequest http://localhost:4000/health | Out-Null
+    Invoke-WebRequest http://localhost:4000/health -ErrorAction Stop | Out-Null
     Write-Host "✅ Claude Router 시작 완료 (PID: $($process.Id))"
     Write-Host "   - Claude Router: http://localhost:4000"
     Write-Host "   - Ollama: http://localhost:11434"
-    Write-Host "   - 로그 파일: $logFile"
+    Write-Host "   - 로그 파일 (stdout): $stdoutLog"
+    Write-Host "   - 로그 파일 (stderr): $stderrLog"
     Write-Host ""
     Write-Host "📋 상태 확인: Invoke-WebRequest http://localhost:4000/health"
-    Write-Host "📋 로그 확인: Get-Content -Path $logFile -Wait"
+    Write-Host "📋 로그 확인: Get-Content -Path $stdoutLog -Wait"
+    Write-Host "📋 오류 로그 확인: Get-Content -Path $stderrLog -Wait"
     Write-Host "🛑 종료: Stop-Process -Id $($process.Id)"
     Write-Host ""
     Write-Host "🎉 모든 서비스가 준비되었습니다!"
 } catch {
     Write-Error "❌ Claude Router 시작 실패"
-    Stop-Process -Id $($process.Id) -ErrorAction SilentlyContinue
+    if ($process) { Stop-Process -Id $process.Id -ErrorAction SilentlyContinue }
     exit 1
 }
