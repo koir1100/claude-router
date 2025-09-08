@@ -49,13 +49,15 @@ try {
 # 4. GPT-OSS 모델 확인
 # -----------------------------
 Write-Host "🔍 GPT-OSS:20b 모델 확인 중..."
-$ollamaList = & ollama list 2>&1
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "❌ Ollama 목록 조회 실패: $ollamaList"
-    exit $LASTEXITCODE
+$ollamaList = ""
+try {
+    $ollamaList = ollama list 2>&1 | Out-String
+} catch {
+    Write-Error "❌ Ollama 목록 조회 실패: $($_.Exception.Message)"
+    exit 1
 }
-if ($ollamaList -notmatch "gpt-oss:20b") {
-    Write-Error "❌ GPT-OSS:20b 모델이 설치되지 않았습니다. 먼저 모델을 설치해주세요: ollama pull gpt-oss:20b"
+if ($ollamaList -notmatch 'gpt-oss:20b') {
+    Write-Error '❌ GPT-OSS:20b 모델이 설치되지 않았습니다. 먼저 모델을 설치해주세요: ollama pull gpt-oss:20b'
     exit 1
 }
 Write-Host "✅ GPT-OSS:20b 모델 확인 완료"
